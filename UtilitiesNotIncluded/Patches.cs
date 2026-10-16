@@ -84,7 +84,7 @@ namespace UtilitiesNotIncluded
 
         public static bool FridgeUnpowered(Storage fridge)
         {
-            if (!Plugin.FridgesNeedPower.Value || !Utilities.RoomOf(fridge.gameObject).InBuilding)
+            if (!Plugin.On || !Plugin.FridgesNeedPower.Value || !Utilities.RoomOf(fridge.gameObject).InBuilding)
                 return false;
             return Utilities.Power(fridge.gameObject, isLight: false).Tier == PowerTier.None;
         }
@@ -102,7 +102,7 @@ namespace UtilitiesNotIncluded
 
         public static bool LightUnpowered(LightController light)
         {
-            if (!Plugin.LightsNeedPower.Value || !Utilities.IsElectric(light) || light.disabled || light.moving)
+            if (!Plugin.On || !Plugin.LightsNeedPower.Value || !Utilities.IsElectric(light) || light.disabled || light.moving)
                 return false;
             if (!Utilities.RoomOf(light.gameObject).InBuilding)
                 return false;

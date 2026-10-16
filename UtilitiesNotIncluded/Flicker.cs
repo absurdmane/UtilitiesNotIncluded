@@ -26,7 +26,7 @@ namespace UtilitiesNotIncluded
         /// <summary>Called by the refresh for every electric light: whether it should flicker now.</summary>
         public static void Set(LightController light, bool flicker)
         {
-            if (flicker && Plugin.ShitLightsFlicker.Value)
+            if (flicker && Plugin.On && Plugin.ShitLightsFlicker.Value)
             {
                 if (!lights.ContainsKey(light))
                     lights[light] = new State();

@@ -15,6 +15,8 @@ namespace UtilitiesNotIncluded
 
         public static int Off => Count(false);
 
+        public static int Tracked => state.Count;
+
         /// <summary>After a load: the old scene's furniture is gone.</summary>
         public static void Reset()
         {
@@ -78,7 +80,7 @@ namespace UtilitiesNotIncluded
         }
 
         private static bool Unpowered(GameObject go) =>
-            Plugin.LightsNeedPower.Value && TenementController.instance != null && Utilities.RoomOf(go).InBuilding
+            Plugin.On && Plugin.LightsNeedPower.Value && TenementController.instance != null && Utilities.RoomOf(go).InBuilding
             && Utilities.Power(go, isLight: true).Tier == PowerTier.None;
 
         private static void Apply(FurniturePlaceable furniture, bool lit)

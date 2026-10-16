@@ -330,6 +330,12 @@ namespace UtilitiesNotIncluded
         /// <summary>Whether the device may run, and why not. Industrial devices need <see cref="Plugin.IndustrialRequiredPowerLevel"/>.</summary>
         public static bool DeviceHasPower(CraftingBase device, out PowerInfo power, out string reason)
         {
+            if (!Plugin.On)
+            {
+                power = new PowerInfo(PowerTier.Best, false, null);
+                reason = null;
+                return true;
+            }
             power = Power(device.gameObject, isLight: false);
             reason = power.Reason;
             if (power.Tier == PowerTier.None)

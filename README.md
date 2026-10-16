@@ -62,7 +62,7 @@ Works on existing saves. The outage state is kept in a small file of its own nex
 | Outages | `Enabled` / `PerDay` / `MinHoursBetween` | `true` / `1` / `6` | breaker trips on Shit electricity |
 | Water | `Enabled` | `true` | taps follow the water upgrades |
 | | `BestWater` | `Pure` | what the Best upgrade gives: Clean, Pure or Spring |
-| Mod | `Enabled` | `true` | off = the mod does nothing (no patches), as in vanilla; needs a restart |
+| Mod | `Enabled` | `true` | off = everything goes back to vanilla and the patches are removed; works without a restart |
 
 When reporting a problem, please attach `BepInEx/LogOutput.log` and say where it happened (room, device or lamp)
 and your building's electricity and water levels.

@@ -108,7 +108,50 @@ namespace UtilitiesNotIncluded
             }
         }
 
+        /// <summary>The mod was switched off: one pass with every answer "powered" (see <see cref="Plugin.On"/>), then forget it all.</summary>
+        public static void RestoreVanilla()
+        {
+            if (instance == null)
+                return;
+            instance.refreshAt = -1f;
+            instance.refreshFrame = -1;
+            try
+            {
+                instance.Refresh();
+            }
+            catch (System.Exception e)
+            {
+                Plugin.Log.LogError($"Restoring vanilla failed: {e}");
+            }
+        }
+
+        // Anything we changed that a pass would have to put back.
+        private bool Applied => deviceState.Count > 0 || fridgeState.Count > 0 || lightState.Count > 0 || lampState.Count > 0
+            || Flicker.Count > 0 || GlowingFurniture.Tracked > 0;
+
         private void Refresh()
+        {
+            if (!Plugin.On && !Applied)
+                return;
+            try
+            {
+                RefreshAll();
+            }
+            finally
+            {
+                if (!Plugin.On)
+                {
+                    // Missing = vanilla; the pass above put everything there.
+                    deviceState.Clear();
+                    fridgeState.Clear();
+                    lightState.Clear();
+                    lampState.Clear();
+                    GlowingFurniture.Reset();
+                }
+            }
+        }
+
+        private void RefreshAll()
         {
             lastRefresh = Time.unscaledTime;
             Utilities.ClearCache();

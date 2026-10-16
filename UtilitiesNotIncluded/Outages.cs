@@ -57,7 +57,7 @@ namespace UtilitiesNotIncluded
         /// <summary>Called every in-game second batch (<c>TimeOfDayAzure.SecondsPassed</c>).</summary>
         public static void OnSecondsPassed(int seconds)
         {
-            if (!Plugin.OutagesEnabled.Value || Active || seconds <= 0 || !OnShitGrid || SaveController.Loading)
+            if (!Plugin.On || !Plugin.OutagesEnabled.Value || Active || seconds <= 0 || !OnShitGrid || SaveController.Loading)
                 return;
             ulong now = Now;
             if (now < loadedAt + QuietAfterLoadMinutes || now < lastChange + (ulong)(Plugin.OutageMinHoursBetween.Value * 60f))

@@ -14,7 +14,7 @@ namespace UtilitiesNotIncluded
     {
         public static bool Unpowered(LightTurnOffOn lamp)
         {
-            if (!Plugin.LightsNeedPower.Value || TenementController.instance == null)
+            if (!Plugin.On || !Plugin.LightsNeedPower.Value || TenementController.instance == null)
                 return false;
             // Candles and fire may use the same switch component; only electric lights need power.
             LightController controller = lamp.GetComponentInChildren<LightController>(true);

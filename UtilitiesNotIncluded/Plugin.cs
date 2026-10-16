@@ -1,3 +1,4 @@
+using System.Linq;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
@@ -106,24 +107,50 @@ namespace UtilitiesNotIncluded
             BestWater = Config.Bind("Water", "BestWater", BestWaterKind.Pure,
                 "Water from the Best water upgrade.");
 
+            Enabled = Config.Bind("Mod", "Enabled", true,
+                "Off = the mod does nothing: everything goes back to vanilla and its patches are removed (e.g. to compare performance). " +
+                "Works without a restart.");
             Config.SettingChanged += (_, e) =>
             {
+                if (e.ChangedSetting == Enabled)
+                {
+                    SetOn(Enabled.Value);
+                    return;
+                }
                 if (e.ChangedSetting.Definition.Key.StartsWith("Flicker"))
                     Flicker.Reschedule();
                 Refresher.Request();
             };
-            Enabled = Config.Bind("Mod", "Enabled", true,
-                "Off = the mod does nothing at all: no patches, everything as in vanilla (e.g. to compare performance). Needs a game restart.");
-            if (!Enabled.Value)
-            {
-                Log.LogInfo($"{Name} {Version} is off ([Mod] Enabled = false)");
-                return;
-            }
 
-            new Harmony(Guid).PatchAll(typeof(Plugin).Assembly);
+            harmony = new Harmony(Guid);
             gameObject.AddComponent<Refresher>();
             gameObject.AddComponent<Flicker>();
-            Log.LogInfo($"{Name} {Version} loaded");
+            if (Enabled.Value)
+                harmony.PatchAll(typeof(Plugin).Assembly);
+            Log.LogInfo($"{Name} {Version} loaded{(Enabled.Value ? "" : ", off ([Mod] Enabled = false)")}");
+        }
+
+        private static Harmony harmony;
+
+        /// <summary>The master switch. Every "is there power" answer is "yes" while off, so a refresh puts everything back to vanilla.</summary>
+        internal static bool On => Enabled == null || Enabled.Value;
+
+        private static bool patched => harmony != null && harmony.GetPatchedMethods().Any();
+
+        private static void SetOn(bool on)
+        {
+            if (on)
+            {
+                if (!patched)
+                    harmony.PatchAll(typeof(Plugin).Assembly);
+                Refresher.Request(0f);
+                Log.LogInfo($"{Name} on");
+                return;
+            }
+            // Restore while our patches are still in (the lights' Override prefix, the fridges' getter), then drop them.
+            Refresher.RestoreVanilla();
+            harmony.UnpatchSelf();
+            Log.LogInfo($"{Name} off: back to vanilla, patches removed");
         }
     }
 }
