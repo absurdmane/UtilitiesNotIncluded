@@ -18,10 +18,15 @@ namespace UtilitiesNotIncluded
         {
             if (!__result || __instance.RequiresFuel || __instance.Type != PowerSource.PowerSourceType.Electricity || __instance.Parent == null)
                 return;
-            CraftingBase device = __instance.Parent.GetComponent<CraftingBase>();
-            if (device == null || device._Power != __instance || !Utilities.Handles(device))
-                return;
-            if (!Utilities.DeviceHasPower(device, out _, out _))
+            // Stations ask every frame; the answer only changes on a refresh, which clears the cache.
+            if (!Utilities.PoweredCache.TryGetValue(__instance, out bool unpowered))
+            {
+                CraftingBase device = __instance.Parent.GetComponent<CraftingBase>();
+                unpowered = device != null && device._Power == __instance && Utilities.Handles(device)
+                    && !Utilities.DeviceHasPower(device, out _, out _);
+                Utilities.PoweredCache[__instance] = unpowered;
+            }
+            if (unpowered)
                 __result = false;
         }
 

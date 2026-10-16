@@ -66,8 +66,8 @@ namespace UtilitiesNotIncluded
     }
 
     /// <summary>
-    /// Room and utility levels of any object. Rooms are cached; <see cref="Refresher"/> drops the cache on every refresh.
-    /// Upgrade levels are read live.
+    /// Room and utility levels of any object. Rooms and the devices' power answers are cached; <see cref="Refresher"/> drops the cache
+    /// on every refresh (and everything that changes power triggers one). Upgrade levels are read live.
     /// </summary>
     internal static class Utilities
     {
@@ -75,9 +75,13 @@ namespace UtilitiesNotIncluded
         private static readonly HashSet<FurnitureManager> poweredAreas = new HashSet<FurnitureManager>();
         private static Dictionary<GameObject, FurnitureManager> furnitureOwner;
 
+        /// <summary>Power source -> unpowered by us, for the <c>Powered</c> getter. Cleared with the rest.</summary>
+        public static readonly Dictionary<PowerSource, bool> PoweredCache = new Dictionary<PowerSource, bool>();
+
         public static void ClearCache()
         {
             rooms.Clear();
+            PoweredCache.Clear();
             furnitureOwner = null;
         }
 

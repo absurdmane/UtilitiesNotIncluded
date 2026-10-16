@@ -76,6 +76,7 @@ namespace UtilitiesNotIncluded
             fridgeState.Clear();
             lightState.Clear();
             lampState.Clear();
+            GlowingFurniture.Reset();
             subscribed.Clear(); // the old scene's managers are gone
             refreshFrame = Time.frameCount + AfterLoadFrames;
             refreshAt = Time.unscaledTime + SafetyPassDelay;

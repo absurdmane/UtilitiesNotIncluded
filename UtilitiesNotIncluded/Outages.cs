@@ -19,7 +19,18 @@ namespace UtilitiesNotIncluded
         private const ulong QuietAfterLoadMinutes = 10;
 
         /// <summary>The breaker is down: no grid power anywhere in the building.</summary>
-        public static bool Active { get; private set; }
+        public static bool Active
+        {
+            get => active;
+            private set
+            {
+                if (active != value)
+                    Utilities.PoweredCache.Clear(); // stations see it at once, before the refresh it triggers
+                active = value;
+            }
+        }
+
+        private static bool active;
 
         private static ulong lastChange; // in-game minutes of the last trip / reset
         private static ulong loadedAt;

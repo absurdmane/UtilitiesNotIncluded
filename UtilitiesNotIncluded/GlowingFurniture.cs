@@ -15,6 +15,13 @@ namespace UtilitiesNotIncluded
 
         public static int Off => Count(false);
 
+        /// <summary>After a load: the old scene's furniture is gone.</summary>
+        public static void Reset()
+        {
+            state.Clear();
+            matched.Clear();
+        }
+
         private static int Count(bool value)
         {
             int n = 0;
@@ -44,15 +51,30 @@ namespace UtilitiesNotIncluded
             }
         }
 
+        // Name matches per furniture, for the list they were made with: the renderer scan below is the costly part of a refresh.
+        private static readonly Dictionary<FurniturePlaceable, bool> matched = new Dictionary<FurniturePlaceable, bool>();
+        private static string matchedList;
+
         // The furniture's own name, or the name of one of its meshes (variants share mesh names like decoration_lights_00N).
         private static bool Listed(FurniturePlaceable furniture, string list)
         {
-            if (Utilities.Listed(furniture.transform, list))
-                return true;
-            foreach (Renderer r in furniture.GetComponentsInChildren<Renderer>(true))
-                if (Utilities.Listed(r.transform, list))
-                    return true;
-            return false;
+            if (list != matchedList)
+            {
+                matched.Clear();
+                matchedList = list;
+            }
+            if (matched.TryGetValue(furniture, out bool cached))
+                return cached;
+            bool result = Utilities.Listed(furniture.transform, list);
+            if (!result)
+                foreach (Renderer r in furniture.GetComponentsInChildren<Renderer>(true))
+                    if (Utilities.Listed(r.transform, list))
+                    {
+                        result = true;
+                        break;
+                    }
+            matched[furniture] = result;
+            return result;
         }
 
         private static bool Unpowered(GameObject go) =>
