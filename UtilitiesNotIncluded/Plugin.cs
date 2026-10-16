@@ -32,6 +32,7 @@ namespace UtilitiesNotIncluded
         internal static ConfigEntry<bool> StairwellOutlets;
         internal static ConfigEntry<bool> ShitLightsFlicker;
         internal static ConfigEntry<bool> FixLampGlow;
+        internal static ConfigEntry<bool> Enabled;
         internal static ConfigEntry<string> GlowingFurniture;
         internal static ConfigEntry<float> FlickersPerMinute;
         internal static ConfigEntry<float> FlickerDepth;
@@ -111,6 +112,14 @@ namespace UtilitiesNotIncluded
                     Flicker.Reschedule();
                 Refresher.Request();
             };
+            Enabled = Config.Bind("Mod", "Enabled", true,
+                "Off = the mod does nothing at all: no patches, everything as in vanilla (e.g. to compare performance). Needs a game restart.");
+            if (!Enabled.Value)
+            {
+                Log.LogInfo($"{Name} {Version} is off ([Mod] Enabled = false)");
+                return;
+            }
+
             new Harmony(Guid).PatchAll(typeof(Plugin).Assembly);
             gameObject.AddComponent<Refresher>();
             gameObject.AddComponent<Flicker>();
