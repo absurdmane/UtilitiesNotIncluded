@@ -7,8 +7,8 @@ namespace UtilitiesNotIncluded
 {
     /// <summary>
     /// Re-evaluates power for devices, fridges and lamps when something that affects it happens. No polling.
-    /// Triggers: a level finished loading (also covers finished upgrades — paying for one means leaving the Tenement),
-    /// furniture placed or taken, a generator starting or stopping, a config change.
+    /// Triggers: a level finished loading, an upgrade level set (<see cref="UpgradeWatcher"/>), furniture placed or taken,
+    /// a generator starting or stopping, a config change.
     /// The refresh runs a moment after the trigger, so freshly spawned devices have run their own Start first.
     /// After a load: two frames later, while the loading screen still covers the scene, plus a safety pass a second later
     /// for objects that finish initializing in coroutines (it changes nothing if all is already applied).
@@ -63,15 +63,47 @@ namespace UtilitiesNotIncluded
             SaveController.LoadingDone -= OnLoadingDone;
             SceneManager.sceneLoaded -= OnSceneLoaded;
             TimeOfDayAzure.SecondsPassed -= Outages.OnSecondsPassed;
+            UnsubscribeFromManagers();
+        }
+
+        /// <summary>
+        /// The mod unloads: everything back to vanilla, then forget it all. Works on a refresher already destroyed with the plugin's
+        /// object (its state is still there), hence no Unity null check.
+        /// </summary>
+        public static void Unload()
+        {
+            if (ReferenceEquals(instance, null))
+                return;
+            RestoreVanilla();
+            instance.UnsubscribeFromManagers();
+            instance = null;
+        }
+
+        private void UnsubscribeFromManagers()
+        {
+            foreach (FurnitureManager m in subscribed)
+            {
+                if (m == null)
+                    continue;
+                m.FurniturePlaced -= OnFurnitureChanged;
+                m.FurnitureTaken -= OnFurnitureChanged;
+            }
+            subscribed.Clear();
         }
 
         // Rooms cached for the old scene are useless; devices of the new one start before LoadingDone.
-        private static void OnSceneLoaded(Scene scene, LoadSceneMode mode) => Utilities.ClearCache();
+        private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            Utilities.ClearCache();
+            ElectricLights.ClearCache();
+        }
 
         private void OnLoadingDone()
         {
             Utilities.ClearCache();
             Outages.Load();
+            DevKeys.Reset();
+            Televisions.Reset();
             deviceState.Clear();
             fridgeState.Clear();
             lightState.Clear();
@@ -88,8 +120,11 @@ namespace UtilitiesNotIncluded
             Request();
         }
 
+        private void OnGUI() => DevKeys.OnGUI();
+
         private void Update()
         {
+            DevKeys.Update();
             bool frameDue = refreshFrame >= 0 && Time.frameCount >= refreshFrame;
             bool timeDue = refreshAt >= 0f && Time.unscaledTime >= refreshAt;
             if (!frameDue && !timeDue)
@@ -111,7 +146,7 @@ namespace UtilitiesNotIncluded
         /// <summary>The mod was switched off: one pass with every answer "powered" (see <see cref="Plugin.On"/>), then forget it all.</summary>
         public static void RestoreVanilla()
         {
-            if (instance == null)
+            if (ReferenceEquals(instance, null))
                 return;
             instance.refreshAt = -1f;
             instance.refreshFrame = -1;
@@ -127,7 +162,7 @@ namespace UtilitiesNotIncluded
 
         // Anything we changed that a pass would have to put back.
         private bool Applied => deviceState.Count > 0 || fridgeState.Count > 0 || lightState.Count > 0 || lampState.Count > 0
-            || Flicker.Count > 0 || GlowingFurniture.Tracked > 0;
+            || Flicker.Count > 0 || GlowingFurniture.Tracked > 0 || Televisions.Tracked > 0;
 
         private void Refresh()
         {
@@ -147,6 +182,7 @@ namespace UtilitiesNotIncluded
                     lightState.Clear();
                     lampState.Clear();
                     GlowingFurniture.Reset();
+                    Televisions.Reset();
                 }
             }
         }
@@ -158,7 +194,8 @@ namespace UtilitiesNotIncluded
             if (TenementController.instance == null || TenementController.instance.general == null)
                 return;
 
-            SubscribeToManagers();
+            if (!Plugin.Unloading)
+                SubscribeToManagers();
             Outages.OnRefresh();
             CraftingBase[] devices = FindObjectsByType<CraftingBase>(FindObjectsSortMode.None);
             Utilities.SetRunningGenerators(devices
@@ -166,6 +203,7 @@ namespace UtilitiesNotIncluded
                 .Where(g => g.PoweredAndActive && Utilities.IsMiniGenerator(g)));
 
             RefreshDevices(devices);
+            Televisions.Refresh();
             RefreshFridges();
             RefreshLights();
         }
@@ -233,10 +271,12 @@ namespace UtilitiesNotIncluded
             }
             foreach (LightController light in FindObjectsByType<LightController>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
-                if (!Utilities.IsElectric(light))
+                // A light taken off the list (RemoveLights) still gets one pass to be put back.
+                bool electric = Utilities.IsElectric(light);
+                if (!electric && !lightState.ContainsKey(light))
                     continue;
                 bool has = light.disabled || light.moving || !Patches.LightUnpowered(light);
-                Flicker.Set(light, has && !light.disabled && Plugin.LightsNeedPower.Value && Utilities.RoomOf(light.gameObject).InBuilding
+                Flicker.Set(light, electric && has && !light.disabled && Plugin.LightsNeedPower.Value && Utilities.RoomOf(light.gameObject).InBuilding
                     && Utilities.Power(light.gameObject, isLight: true).Tier == PowerTier.Shit);
                 // The glow is set on every refresh (idempotent), so a lamp can't stay dark by a missed change.
                 EmissionDimmer.Apply(light, has);

@@ -47,7 +47,21 @@ namespace UtilitiesNotIncluded
             nextBurst = Mathf.Min(nextBurst, Time.time + NextGap());
         }
 
-        private static float NextGap() => Random.Range(0.2f, 1.8f) * 60f / Plugin.FlickersPerMinute.Value;
+        /// <summary>The mod unloads: every light gets its own intensity back.</summary>
+        public static void Unload()
+        {
+            foreach (KeyValuePair<LightController, State> kv in lights)
+                Restore(kv.Key, kv.Value);
+            lights.Clear();
+            nextBurst = -1f;
+            burstEnd = nextStep = 0f;
+            factor = 1f;
+        }
+
+        // Tuned in game: about 8 short bursts a minute, dimming to ~85 %, up to 0.6 s, 30 changes a second.
+        private const float PerMinute = 8f, Depth = 0.15f, BurstSeconds = 0.6f, Speed = 30f;
+
+        private static float NextGap() => Random.Range(0.2f, 1.8f) * 60f / PerMinute;
 
         private void LateUpdate()
         {
@@ -86,15 +100,15 @@ namespace UtilitiesNotIncluded
             {
                 if (now >= nextStep)
                 {
-                    nextStep = now + Random.Range(0.5f, 1.5f) / Plugin.FlickerSpeed.Value;
-                    factor = Random.value < 0.5f ? 1f - Plugin.FlickerDepth.Value * Random.Range(0.6f, 1f) : 1f;
+                    nextStep = now + Random.Range(0.5f, 1.5f) / Speed;
+                    factor = Random.value < 0.5f ? 1f - Depth * Random.Range(0.6f, 1f) : 1f;
                 }
                 return;
             }
             factor = 1f;
             if (now >= nextBurst)
             {
-                burstEnd = now + Plugin.FlickerBurstSeconds.Value * Random.Range(1f / 6f, 1f);
+                burstEnd = now + BurstSeconds * Random.Range(1f / 6f, 1f);
                 nextStep = now;
                 nextBurst = burstEnd + NextGap();
             }

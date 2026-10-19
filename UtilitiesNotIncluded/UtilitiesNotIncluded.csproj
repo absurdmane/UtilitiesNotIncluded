@@ -18,7 +18,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- GameDir comes from ../local.props (see local.props.example). dotnet build -p:Deploy=true copies the dll into BepInEx\plugins\UtilitiesNotIncluded -->
+    <!-- GameDir comes from ../local.props (see local.props.example). dotnet build -p:Deploy=true copies the dll into BepInEx\plugins\UtilitiesNotIncluded,
+         -p:Deploy=scripts into BepInEx\scripts\UtilitiesNotIncluded -->
     <Deploy Condition="'$(Deploy)' == ''">false</Deploy>
   </PropertyGroup>
 
@@ -39,13 +40,22 @@
     <Reference Include="$(ManagedDir)\UnityEngine.InputLegacyModule.dll" Private="false" />
     <Reference Include="$(ManagedDir)\UnityEngine.UI.dll" Private="false" />
     <Reference Include="$(ManagedDir)\UnityEngine.UIModule.dll" Private="false" />
+    <Reference Include="$(ManagedDir)\UnityEngine.IMGUIModule.dll" Private="false" />
+    <Reference Include="$(ManagedDir)\UnityEngine.TextRenderingModule.dll" Private="false" />
     <Reference Include="$(ManagedDir)\Unity.TextMeshPro.dll" Private="false" />
     <Reference Include="$(ManagedDir)\UnityEngine.PhysicsModule.dll" Private="false" />
   </ItemGroup>
 
   <Target Name="DeployToGame" AfterTargets="Build" Condition="'$(Deploy)' == 'true'">
+    <Delete Files="$(GameDir)\BepInEx\scripts\UtilitiesNotIncluded\UtilitiesNotIncluded.dll;$(GameDir)\BepInEx\scripts\UtilitiesNotIncluded\UtilitiesNotIncluded.pdb" />
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(GameDir)\BepInEx\plugins\UtilitiesNotIncluded" />
     <Message Importance="high" Text="UtilitiesNotIncluded -> $(GameDir)\BepInEx\plugins\UtilitiesNotIncluded" />
+  </Target>
+  <Target Name="DeployToScripts" AfterTargets="Build" Condition="'$(Deploy)' == 'scripts'">
+    <Delete Files="$(GameDir)\BepInEx\plugins\UtilitiesNotIncluded\UtilitiesNotIncluded.dll" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(GameDir)\BepInEx\scripts\UtilitiesNotIncluded" />
+    <Copy SourceFiles="$(TargetDir)$(TargetName).pdb" DestinationFolder="$(GameDir)\BepInEx\scripts\UtilitiesNotIncluded" Condition="Exists('$(TargetDir)$(TargetName).pdb')" />
+    <Message Importance="high" Text="UtilitiesNotIncluded -> $(GameDir)\BepInEx\scripts\UtilitiesNotIncluded (press the reload key in game)" />
   </Target>
 
 </Project>

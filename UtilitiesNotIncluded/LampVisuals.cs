@@ -16,9 +16,8 @@ namespace UtilitiesNotIncluded
         {
             if (!Plugin.On || !Plugin.LightsNeedPower.Value || TenementController.instance == null)
                 return false;
-            // Candles and fire may use the same switch component; only electric lights need power.
-            LightController controller = lamp.GetComponentInChildren<LightController>(true);
-            if (controller != null && !Utilities.IsElectric(controller))
+            // Candles and fire may use the same switch component; only listed lights need power.
+            if (!ElectricLights.IsElectric(lamp.transform))
                 return false;
             if (!Utilities.RoomOf(lamp.gameObject).InBuilding)
                 return false;
@@ -58,6 +57,14 @@ namespace UtilitiesNotIncluded
             return placed != null ? placed.transform : lamp.transform;
         }
 
+        /// <summary>Loaded mid-game: lamps already switched off get their extra meshes dimmed, as if switched off now.</summary>
+        public static void AddToExisting()
+        {
+            foreach (LightTurnOffOn lamp in Object.FindObjectsByType<LightTurnOffOn>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                if (!lamp.on)
+                    TurnLightOffPostfix(lamp);
+        }
+
         /// <summary>
         /// The game's switch only swaps the materials of its own mesh list; some lamps (the Wall Light) have a second glowing
         /// mesh that isn't in it and stays lit. Dim it too.
@@ -68,8 +75,7 @@ namespace UtilitiesNotIncluded
         {
             try
             {
-                if (Plugin.FixLampGlow.Value)
-                    EmissionDimmer.ApplyAll(Root(__instance), lit: false);
+                EmissionDimmer.ApplyAll(Root(__instance), lit: false);
             }
             catch (System.Exception e)
             {
@@ -86,7 +92,7 @@ namespace UtilitiesNotIncluded
             {
                 if (Unpowered(__instance))
                     Apply(__instance, powered: false);
-                else if (Plugin.FixLampGlow.Value)
+                else
                     EmissionDimmer.ApplyAll(Root(__instance), lit: true);
             }
             catch (System.Exception e)

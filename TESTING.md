@@ -59,15 +59,64 @@ a generator starts/stops, or the config changes.
       everything comes back. With power on, the panel shows no prompt.
 - [ ] Save during an outage, load: still out. Reset, save, load: power on. (Check also with EvenFasterSaveAndLoad.)
 - [ ] Building electricity Good/Best: "trip" does nothing; upgrading during an outage ends it.
-- [ ] Natural outages: with `PerDay = 10`, `MinHoursBetween = 0` and time ×60 (DevMenu Tools) one comes within a few in-game hours,
+- [ ] Natural outages: with `PerDay = 10` and time ×60 (DevMenu Tools) one comes within a few in-game hours,
       not in the first 10 in-game minutes after loading. Default settings: about one per in-game day, never closer than 6 h.
 
 ## 3. Fridges
 
 - [ ] Without power the fridge panel has no snowflake; food spoils at room speed. With power: snowflake back.
 - [ ] Remove the mod (delete the dll), load the same save: the fridge cools (nothing stuck off).
+- [ ] Styrofoam Cooler without power: snowflake stays, food keeps cooling. Fridge, Chest Freezer, Commercial Refrigerator: off.
+- [ ] DevMenu → UNI → "Dump lights and fridges": every refrigerated storage shows the right verdict (no `settings='Custom'` or
+      unknown category that should be electric).
 
 ## 4. Lights
+
+Electric = on the list in `ElectricLights.cs` (+ `AddLights`, − `RemoveLights`), or a light of an electric device; everything else
+stays vanilla (the level designer's fill lights too).
+
+Test hotkey `[Testing] PowerCutKey` (default None; e.g. F6): cuts the building grid / brings it back.
+
+2026-10-19: walked every room and upgrade with the room fill feature (since removed), nothing wrong seen.
+2026-10-19: electric lamps checked in game in the rooms owned (power cut on/off): OK. TV, growing speed and the furniture
+placement spike: OK.
+
+Quick walk (per room you have: apartment, shop, stairwell, basement, greenhouse; tenants' rooms when you pass them):
+1. PowerCutKey (or DevMenu → UNI → trip the breaker). Every electric lamp is dark (light and shade/tube); lanterns, candles, fire, mushrooms,
+   windows stay as they were. Reset the breaker: all back.
+2. Once: "Dump lights and fridges" and send the file; the names get checked against the lists.
+Upgrades you don't own (NPC kitchens and WC lvl 3+, shop Fine) can't be seen; their entries stay "from the game files".
+
+- [ ] DevMenu → UNI → "Dump lights and fridges" in the Tenement (apartment, shop, basement, stairwell, greenhouse, mine):
+      check `BepInEx/UtilitiesNotIncluded/electric-dump.txt`. "Listed" has only real lamps; "not listed" has no electric lamp.
+- [ ] Fluorescent tubes hung bare in upgrades (shop walls Fine: 8, greenhouse Fine: 2, kitchens lvl 3-4 of the player and
+      tenants): lit with power; without power the light and the tube both go dark, nothing
+      else in the room dims. Dump: listed `[by Upgrade_.../Point Light (n)]`.
+- [x] TV without power (PowerCutKey or outage): a TV that was on goes dark and silent; using it shows red "No Power" and does
+      nothing. Power back: it comes back on by itself; a TV switched off stays off. Load a save without power: it doesn't flash on.
+      Remove the mod: TVs work (nothing saved changed).
+- [x] Mushrooms planted in a terrarium keep their glow and lit look after a reload, with and without power; only the terrarium's
+      own lamp (its roof) goes dark without power. (Bug 19.10: the whole terrarium was dimmed, crops included.)
+      The green light the mushrooms cast on the glass stays too (the terrarium's `Avg` light; bug 19.10: it went off). Seen fixed 2026-10-19.
+- [x] Growing speed (the panel's efficiency): terrarium / aquarium without power 100 %, on Shit power above 100 % (base × quality
+      factor, never below 100 %), on Good/Best full. Lit growing box without power = the same box without a lamp. A plant's growing
+      time is fixed when it's planted.
+- [x] Placing or taking furniture: no visible FPS spike.
+- [ ] Fire and glow stay lit without power: Brick/Gas Furnace, Stone Fireplace, Red Barrel with Fire, Metal Stove, Ball Grill,
+      stills, barrel stoves, candles, lanterns, glowing mushrooms, windows, NPC glow, Jack O Turnip, Plutonium Core.
+- [ ] Lights of electric devices (grow boxes, terrarium, aquarium, hydroponics, TV glow, microwave) go off while the device has
+      no power and come back with it; fuel devices (furnaces, grill, generator) keep theirs. Crops in a grow box (glowing
+      mushrooms) keep glowing without power.
+- [ ] Greenhouse Fine and shop Fine: every fluorescent tube (`Fluorescent_light_001 (n)`) goes dark without power, also the ones
+      without a light of their own (e.g. greenhouse `(4)`), and glows again with power. Note a tube that keeps glowing (its
+      Animator could set the glow itself).
+- [x] Malone's decorative terrarium (apartment 7) goes dark without power (on the list by path, it isn't a device).
+      Seen 2026-10-19: dark, the apartment has no electricity of its own.
+- [ ] Bare lights 0.8-1.5 m from an electric lamp (shop Fine `Point Light (1)` by `Ceiling_Shop`, basement walls Fine, greenhouse Fine
+      (17)/(22), WC lvl 3 of the player and tenants, tenants' Fine front balcony): dark without power, lit with it. One that
+      turns out to be room fill: remove it from `ElectricLights.BareLamps`.
+- [ ] `RemoveLights = Ceiling Light`: a ceiling light that was dark (outage) lights up after the setting change; `AddLights`
+      back to empty and it goes dark again.
 
 - [ ] Without power electric lamps in the apartment are off; candles/fire still burn. With power they come back.
 - [ ] Built-in lamps of the apartment (e.g. `lamp_008_toggle` of the walls upgrade) go off without power and come back with it
@@ -78,11 +127,11 @@ a generator starts/stops, or the config changes.
 - [ ] Without power the shade/bulb doesn't look lit: lamps without a switch (Ceiling Light, built-in ceiling lights) and switch lamps.
       With power back they glow again; a switch lamp turned off by its switch stays dark.
 - [ ] Stairwell (Decent, Fine) and the roof greenhouse (Fine) during an outage: `lamp_001` and `Fluorescent_light_001` lamps go dark
-      too (light and shade), via `ExtraElectricLights`.
-- [ ] Tenant apartment with Makeshift walls during an outage: the red kerosene lantern keeps glowing (`NonElectricLights`).
-- [ ] Wall Light: switched off, and unpowered during an outage, both bulbs go dark; switched back on, both glow (`FixLampGlow`).
-- [ ] Decoration lights (all three sizes) go dark during an outage and come back (animated ones resume their pattern) after the reset (`GlowingFurniture`).
-- [ ] Shit building electricity: lamps flicker now and then in short bursts, all in sync; DevMenu UNI status shows "flickering N". With Good power or `ShitLightsFlicker` off they are steady and at full brightness (no leftover dimming).
+      too (light and shade).
+- [ ] Tenant apartment with Makeshift walls during an outage: the red kerosene lantern keeps glowing.
+- [ ] Wall Light: switched off, and unpowered during an outage, both bulbs go dark; switched back on, both glow (always on now: was `FixLampGlow`).
+- [ ] Decoration lights (all three sizes) go dark during an outage and come back (animated ones resume their pattern) after the reset.
+- [ ] Shit building electricity: lamps flicker now and then in short bursts, all in sync; DevMenu UNI status shows "flickering N". With Good power or `[Lights] Flicker` off they are steady and at full brightness (no leftover dimming).
 - [ ] Flip a lamp's switch while unpowered: the light stays off and the shade stays dark. Power back: it lights up as switched.
 - [ ] Nothing else near a lamp goes dark (screens, signs, other glowing things in the same furniture / parent).
 

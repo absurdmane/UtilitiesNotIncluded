@@ -48,15 +48,32 @@ namespace UtilitiesNotIncluded
                 __result = false;
         }
 
-        /// <summary>Unstable voltage: electric devices on Shit power work at lower equipment quality.</summary>
+        /// <summary>
+        /// Growing devices keep growing without power (the game never pauses them), but their lamp is what makes them better than a
+        /// plain bed: without power they grow at most at 100 %, like the same bed without a lamp (terrarium 1.5, lit growing box
+        /// 1.25 → 1; plain growing box 1, from the 16.10 dump).
+        /// </summary>
+        private const float UnpoweredGrowingQuality = 1f;
+
+        /// <summary>
+        /// Unstable voltage: electric devices on Shit power work at lower equipment quality. Unpowered growing devices: see
+        /// <see cref="UnpoweredGrowingQuality"/>. A plant's growing time is set from this when it's planted.
+        /// </summary>
         [HarmonyPostfix]
         [HarmonyPatch(typeof(CraftingBase), nameof(CraftingBase.EquipmentQualityWithUpgrades), MethodType.Getter)]
         private static void EquipmentQualityPostfix(CraftingBase __instance, ref float __result)
         {
-            if (Plugin.ShitElectricityQuality.Value >= 1f || !Utilities.Handles(__instance))
+            if (!Utilities.Handles(__instance))
                 return;
-            if (Utilities.DeviceHasPower(__instance, out PowerInfo power, out _) && power.Tier == PowerTier.Shit)
-                __result *= Plugin.ShitElectricityQuality.Value;
+            bool has = Utilities.DeviceHasPower(__instance, out PowerInfo power, out _);
+            if (!has && __instance is Growing)
+                __result = Mathf.Min(__result, UnpoweredGrowingQuality);
+            else if (has && power.Tier == PowerTier.Shit && Plugin.ShitElectricityQuality.Value < 1f)
+            {
+                float shit = __result * Plugin.ShitElectricityQuality.Value;
+                // A growing device on bad power is never worse than one with no power at all.
+                __result = __instance is Growing ? Mathf.Max(shit, Mathf.Min(__result, UnpoweredGrowingQuality)) : shit;
+            }
         }
 
         /// <summary>A generator starting or stopping (fuel in, fuel out, switched) changes power around it.</summary>
@@ -84,7 +101,7 @@ namespace UtilitiesNotIncluded
 
         public static bool FridgeUnpowered(Storage fridge)
         {
-            if (!Plugin.On || !Plugin.FridgesNeedPower.Value || !Utilities.RoomOf(fridge.gameObject).InBuilding)
+            if (!Plugin.On || !Plugin.FridgesNeedPower.Value || !Utilities.IsElectricFridge(fridge) || !Utilities.RoomOf(fridge.gameObject).InBuilding)
                 return false;
             return Utilities.Power(fridge.gameObject, isLight: false).Tier == PowerTier.None;
         }
@@ -104,6 +121,9 @@ namespace UtilitiesNotIncluded
         {
             if (!Plugin.On || !Plugin.LightsNeedPower.Value || !Utilities.IsElectric(light) || light.disabled || light.moving)
                 return false;
+            CraftingBase device = Utilities.DeviceOf(light);
+            if (device != null)
+                return !Utilities.DeviceHasPower(device, out _, out _);
             if (!Utilities.RoomOf(light.gameObject).InBuilding)
                 return false;
             return Utilities.Power(light.gameObject, isLight: true).Tier == PowerTier.None;

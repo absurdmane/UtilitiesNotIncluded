@@ -24,7 +24,8 @@ namespace UtilitiesNotIncluded
             if (root == null || root.GetComponentInChildren<LightTurnOffOn>(true) != null)
                 return; // switchable lamps are handled by LampVisuals
             foreach (Renderer renderer in root.GetComponentsInChildren<Renderer>(true))
-                ApplyRenderer(renderer, powered);
+                if (powered || !SpawnedBelow(renderer.transform, root))
+                    ApplyRenderer(renderer, powered);
         }
 
         /// <summary>
@@ -36,7 +37,20 @@ namespace UtilitiesNotIncluded
             if (root == null)
                 return;
             foreach (Renderer renderer in root.GetComponentsInChildren<Renderer>(true))
-                ApplyRenderer(renderer, lit);
+                if (lit || !SpawnedBelow(renderer.transform, root))
+                    ApplyRenderer(renderer, lit);
+        }
+
+        /// <summary>
+        /// Something the game spawned into the lamp or device, e.g. mushrooms planted in a terrarium: it glows by itself and is never
+        /// dimmed (putting the original back is always allowed).
+        /// </summary>
+        private static bool SpawnedBelow(Transform t, Transform root)
+        {
+            for (; t != null && t != root; t = t.parent)
+                if (t.name.Contains("(Clone)"))
+                    return true;
+            return false;
         }
 
         private static void ApplyRenderer(Renderer renderer, bool powered)
@@ -65,8 +79,30 @@ namespace UtilitiesNotIncluded
                 renderer.sharedMaterials = materials;
         }
 
+        /// <summary>
+        /// The mod unloads: every dark copy still on a renderer (unpowered lamps, meshes dimmed for a switched-off lamp) goes back to
+        /// its original, then the copies are destroyed.
+        /// </summary>
+        public static void Unload()
+        {
+            if (originals.Count > 0)
+                foreach (Renderer renderer in Object.FindObjectsByType<Renderer>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                    ApplyRenderer(renderer, powered: true);
+            foreach (Material dark in originals.Keys)
+                if (dark != null)
+                    Object.Destroy(dark);
+            originals.Clear();
+            darkCopies.Clear();
+        }
+
         private static Transform Root(LightController light)
         {
+            // A bare lamp light's parent is the whole room: only its tube, or nothing if the tube isn't there.
+            if (ElectricLights.IsBareLamp(light.transform))
+                return ElectricLights.TubeOf(light.transform);
+            // A device's light: only the lamp around it (e.g. the terrarium's roof), not the whole device.
+            if (Utilities.DeviceOf(light) != null)
+                return light.transform.parent != null ? light.transform.parent : light.transform;
             FurniturePlaceable placed = light.GetComponentInParent<FurniturePlaceable>();
             if (placed != null)
                 return placed.transform;

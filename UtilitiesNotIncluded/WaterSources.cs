@@ -31,6 +31,16 @@ namespace UtilitiesNotIncluded
             return source;
         }
 
+        /// <summary>The mod unloads: taps pour from the game's sources again (the patch is gone), so ours go.</summary>
+        public static void Unload()
+        {
+            foreach (LiquidStorage source in ours)
+                if (source != null)
+                    Object.Destroy(source.gameObject);
+            ours.Clear();
+            sources.Clear();
+        }
+
         private static int LiquidFor(WaterLevel level)
         {
             switch (level)

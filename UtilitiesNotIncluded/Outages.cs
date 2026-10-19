@@ -49,7 +49,7 @@ namespace UtilitiesNotIncluded
             if (!OnShitGrid)
                 return "Outages: none (only on Shit electricity)";
             ulong since = Now >= lastChange ? (Now - lastChange) / 60 : 0;
-            return $"Outages: power on, last trip/reset {since} h ago (next possible after {Plugin.OutageMinHoursBetween.Value} h)";
+            return $"Outages: power on, last trip/reset {since} h ago (next possible after {MinHoursBetween} h)";
         }
 
         // ---- tripping ----
@@ -60,12 +60,15 @@ namespace UtilitiesNotIncluded
             if (!Plugin.On || !Plugin.OutagesEnabled.Value || Active || seconds <= 0 || !OnShitGrid || SaveController.Loading)
                 return;
             ulong now = Now;
-            if (now < loadedAt + QuietAfterLoadMinutes || now < lastChange + (ulong)(Plugin.OutageMinHoursBetween.Value * 60f))
+            if (now < loadedAt + QuietAfterLoadMinutes || now < lastChange + (ulong)(MinHoursBetween * 60f))
                 return;
             float chance = seconds * Plugin.OutagesPerDay.Value / 86400f;
             if (UnityEngine.Random.value < chance)
                 Trip();
         }
+
+        /// <summary>At least this many in-game hours between a reset and the next outage.</summary>
+        private const float MinHoursBetween = 6f;
 
         public static void Trip()
         {
@@ -97,7 +100,8 @@ namespace UtilitiesNotIncluded
                 Active = false;
                 lastChange = Now;
             }
-            BreakerSwitch.Attach();
+            if (!Plugin.Unloading)
+                BreakerSwitch.Attach();
         }
 
         // ---- save / load: our own file in the save folder ----
@@ -165,6 +169,8 @@ namespace UtilitiesNotIncluded
     /// </summary>
     internal sealed class BreakerSwitch : MonoBehaviour, IInteractable
     {
+        private int originalLayer;
+
         public static void Attach()
         {
             GameObject prefab = TenementController.instance?.general?.prefabs?.content?.currentElectricity;
@@ -174,11 +180,22 @@ namespace UtilitiesNotIncluded
                 .FirstOrDefault(t => t.name.IndexOf("electricalbox", StringComparison.OrdinalIgnoreCase) >= 0 && t.GetComponent<Collider>() != null);
             if (panel == null || panel.GetComponent<BreakerSwitch>() != null)
                 return;
+            int layer = panel.gameObject.layer;
             int usable = LayerMask.NameToLayer("Usable");
             if (usable >= 0)
                 panel.gameObject.layer = usable; // the interact raycast only looks at usable layers
-            panel.gameObject.AddComponent<BreakerSwitch>();
+            panel.gameObject.AddComponent<BreakerSwitch>().originalLayer = layer;
             Plugin.Log.LogInfo($"Breaker switch on {panel.name}");
+        }
+
+        /// <summary>The mod unloads: the panels get their layer back and lose the switch.</summary>
+        public static void Unload()
+        {
+            foreach (BreakerSwitch s in FindObjectsByType<BreakerSwitch>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                s.gameObject.layer = s.originalLayer;
+                Destroy(s);
+            }
         }
 
         public void Interact()

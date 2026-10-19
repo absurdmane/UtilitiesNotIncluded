@@ -83,34 +83,49 @@ namespace UtilitiesNotIncluded
             rooms.Clear();
             PoweredCache.Clear();
             furnitureOwner = null;
+            lightDevices.Clear();
         }
 
         public static int RunningGeneratorCount { get; private set; }
 
         /// <summary>
-        /// The game's <c>electricLight</c> flag, or a name from <c>ExtraElectricLights</c> on the light or its 3 parents
-        /// (the stairwell's lamp_001 lights are not flagged).
+        /// Whether the light is electric: on the electric lights list (<see cref="ElectricLights"/>), or part of an electric device
+        /// (<see cref="DeviceOf"/>), which it follows.
         /// </summary>
-        public static bool IsElectric(LightController light)
+        public static bool IsElectric(LightController light) => ElectricLights.IsElectric(light.transform) || DeviceOf(light) != null;
+
+        // Light → the electric device it belongs to (null: none). Cleared with the rooms.
+        private static readonly Dictionary<int, CraftingBase> lightDevices = new Dictionary<int, CraftingBase>();
+
+        /// <summary>
+        /// The electric device (not fuel-burning, in the building) a light is part of, e.g. a grow box's lamp or a TV's glow;
+        /// null otherwise. Such a light is off while the device has no power.
+        /// </summary>
+        public static CraftingBase DeviceOf(LightController light)
         {
-            if (Listed(light.transform, Plugin.NonElectricLights.Value))
-                return false;
-            return light.electricLight || Listed(light.transform, Plugin.ExtraElectricLights.Value);
+            int id = light.GetInstanceID();
+            if (!lightDevices.TryGetValue(id, out CraftingBase device))
+            {
+                device = light.GetComponentInParent<CraftingBase>(true);
+                // Only the device's own electric lights: not a crop's glow spawned into it, not a light the game marks as not
+                // electric (the terrarium's green "Avg" light, the glow of its mushrooms; seen in game 19.10). Inside an electric
+                // device there is no fire or candle for the flag to be wrong about.
+                if (device != null && (!light.electricLight || !Handles(device) || SpawnedBetween(light.transform, device.transform)))
+                    device = null;
+                lightDevices[id] = device;
+            }
+            return device;
         }
 
-        /// <summary>Whether the object or one of its 3 parents has a name containing one of the comma-separated parts (any case).</summary>
-        internal static bool Listed(Transform t, string list)
+        /// <summary>Storage categories (<c>StorageSettings</c>) that cool electrically. The Styrofoam Box cools by itself.</summary>
+        private static readonly HashSet<string> ElectricFridgeCategories = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase)
         {
-            string[] names = list.Split(',');
-            for (int i = 0; i <= 3 && t != null; i++, t = t.parent)
-                foreach (string raw in names)
-                {
-                    string name = raw.Trim();
-                    if (name.Length > 0 && t.name.IndexOf(name, System.StringComparison.OrdinalIgnoreCase) >= 0)
-                        return true;
-                }
-            return false;
-        }
+            "Fridge", "Refigerator", "Market Small Bottle Refigerator", "Freezer", "Chest freezer", "Freezer Small"
+        };
+
+        // The game looks the category up with '_' as ' ' (Storage.SetCategorySettings).
+        public static bool IsElectricFridge(Storage storage) =>
+            storage.StorageSettings != null && ElectricFridgeCategories.Contains(storage.StorageSettings.Replace('_', ' '));
 
         /// <summary>
         /// Only the placeable Mini Generator powers things. Other <see cref="Generator"/> components exist in the scene too, e.g. the
@@ -137,6 +152,15 @@ namespace UtilitiesNotIncluded
                 if (area != null)
                     poweredAreas.Add(area);
             }
+        }
+
+        // A crop planted in a grow box (e.g. glowing mushrooms) is spawned into it: its glow isn't the device's lamp.
+        private static bool SpawnedBetween(Transform light, Transform device)
+        {
+            for (Transform t = light; t != null && t != device; t = t.parent)
+                if (t.name.Contains("(Clone)"))
+                    return true;
+            return false;
         }
 
         // ---- rooms ----
@@ -279,6 +303,8 @@ namespace UtilitiesNotIncluded
         /// <summary>Power from the building grid only, with the reason when there is none.</summary>
         public static PowerInfo GridPower(Room room, bool isLight)
         {
+            if (DevKeys.PowerCut && room.InBuilding)
+                return new PowerInfo(PowerTier.None, false, "Power cut (dev hotkey)");
             if (Outages.Active && room.InBuilding)
                 return new PowerInfo(PowerTier.None, false, "Power outage: reset the breaker at the electrical panel in the basement");
             switch (room.Kind)
