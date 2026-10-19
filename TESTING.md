@@ -95,6 +95,9 @@ Upgrades you don't own (NPC kitchens and WC lvl 3+, shop Fine) can't be seen; th
 - [x] TV without power (PowerCutKey or outage): a TV that was on goes dark and silent; using it shows red "No Power" and does
       nothing. Power back: it comes back on by itself; a TV switched off stays off. Load a save without power: it doesn't flash on.
       Remove the mod: TVs work (nothing saved changed).
+- [x] Place a Floor Lamp (or any glowing lamp) in an unpowered room: its shade goes dark right away, not only its light
+      (bug 20.10: the build mode's highlight put the lit materials back). Hover a dark lamp in build mode, then restore power:
+      it lights up again (not stuck dark).
 - [x] Mushrooms planted in a terrarium keep their glow and lit look after a reload, with and without power; only the terrarium's
       own lamp (its roof) goes dark without power. (Bug 19.10: the whole terrarium was dimmed, crops included.)
       The green light the mushrooms cast on the glass stays too (the terrarium's `Avg` light; bug 19.10: it went off). Seen fixed 2026-10-19.

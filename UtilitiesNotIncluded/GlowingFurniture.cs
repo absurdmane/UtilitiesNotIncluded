@@ -134,6 +134,13 @@ namespace UtilitiesNotIncluded
             return result;
         }
 
+        /// <summary>The look of one furniture again, e.g. after the build mode put its materials back.</summary>
+        public static void Reapply(FurniturePlaceable furniture)
+        {
+            if (furniture != null && Listed(furniture) && Unpowered(furniture.gameObject))
+                Apply(furniture, lit: false);
+        }
+
         private static bool Unpowered(GameObject go) =>
             Plugin.On && Plugin.LightsNeedPower.Value && TenementController.instance != null && Utilities.RoomOf(go).InBuilding
             && Utilities.Power(go, isLight: true).Tier == PowerTier.None;

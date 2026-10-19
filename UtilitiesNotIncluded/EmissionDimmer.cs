@@ -16,6 +16,10 @@ namespace UtilitiesNotIncluded
         // any dark copy found on a lamp's renderer is swapped back for its original.
         private static readonly Dictionary<Material, Material> darkCopies = new Dictionary<Material, Material>();
         private static readonly Dictionary<Material, Material> originals = new Dictionary<Material, Material>();
+        // Dark copies by name: the build mode copies a renderer's materials ("<name> (Instance)") and puts the copies back later,
+        // so a dark copy can come back as an instance of itself.
+        private static readonly Dictionary<string, Material> darkByName = new Dictionary<string, Material>();
+        private const string InstanceSuffix = " (Instance)";
 
         /// <summary>Idempotent: safe to call on every refresh.</summary>
         public static void Apply(LightController light, bool powered)
@@ -64,7 +68,7 @@ namespace UtilitiesNotIncluded
                 Material m = materials[i];
                 if (m == null)
                     continue;
-                if (powered && originals.TryGetValue(m, out Material original))
+                if (powered && (originals.TryGetValue(m, out Material original) || InstanceOfDark(m, out original)))
                 {
                     materials[i] = original;
                     changed = true;
@@ -93,6 +97,7 @@ namespace UtilitiesNotIncluded
                     Object.Destroy(dark);
             originals.Clear();
             darkCopies.Clear();
+            darkByName.Clear();
         }
 
         private static Transform Root(LightController light)
@@ -119,6 +124,14 @@ namespace UtilitiesNotIncluded
             return false;
         }
 
+        private static bool InstanceOfDark(Material m, out Material original)
+        {
+            original = null;
+            return m.name.EndsWith(InstanceSuffix)
+                && darkByName.TryGetValue(m.name.Substring(0, m.name.Length - InstanceSuffix.Length), out Material dark)
+                && originals.TryGetValue(dark, out original);
+        }
+
         private static Material Dark(Material original)
         {
             if (darkCopies.TryGetValue(original, out Material dark) && dark != null)
@@ -130,6 +143,7 @@ namespace UtilitiesNotIncluded
             dark.DisableKeyword("_EMISSION");
             darkCopies[original] = dark;
             originals[dark] = original;
+            darkByName[dark.name] = dark;
             return dark;
         }
     }
