@@ -15,7 +15,7 @@ that room's utilities allow. Nothing is written to the game's saves, so the mod 
 - Unpowered lamps really go dark: the light and the glow of the shade, the bulbs, decoration light garlands.
   Switchable lamps keep their switch position. Which lights are electric comes from the mod's own list.
 - TVs need power. The Styrofoam Cooler doesn't: only fridges and freezers do.
-- A terrarium, aquarium or lit growing box without power grows no faster than a plain bed.
+- A terrarium, aquarium or growing box without power grows no faster than a plain bed.
 
 | Building electricity | Effect |
 |---|---|
