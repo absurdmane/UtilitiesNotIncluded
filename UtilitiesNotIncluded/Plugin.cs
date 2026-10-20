@@ -20,7 +20,7 @@ namespace UtilitiesNotIncluded
     {
         public const string Guid = "obenseuer.absurdmane.utilitiesnotincluded";
         public const string Name = "Utilities Not Included";
-        public const string Version = "1.0.0";
+        public const string Version = "1.1.0";
 
         internal static ManualLogSource Log;
 

@@ -13,7 +13,9 @@ that room's utilities allow. Nothing is written to the game's saves, so the mod 
 - An apartment needs its own electricity upgrade and a powered building. The basement, workshop, sauna,
   greenhouse and mine run on building power. The stairwell has lights but no outlets (configurable).
 - Unpowered lamps really go dark: the light and the glow of the shade, the bulbs, decoration light garlands.
-  Switchable lamps keep their switch position.
+  Switchable lamps keep their switch position. Which lights are electric comes from the mod's own list.
+- TVs need power. The Styrofoam Cooler doesn't: only fridges and freezers do.
+- A terrarium, aquarium or lit growing box without power grows no faster than a plain bed.
 
 | Building electricity | Effect |
 |---|---|
@@ -46,22 +48,20 @@ Works on existing saves. The outage state is kept in a small file of its own nex
 
 | Section | Key | Default | Meaning |
 |---|---|---|---|
-| Electricity | `IndustrialRequiredPowerLevel` | `Best` | tier industrial stations need |
+| Devices | `IndustrialRequiredPowerLevel` | `Best` | tier industrial stations need |
 | | `ShitElectricityQuality` | `0.85` | equipment quality multiplier on Shit power |
-| | `LightsNeedPower` | `true` | electric lights go dark without power |
-| | `ExtraElectricLights` | `lamp_001, Fluorescent_light, elevator_001_light, lamp_mushroom, desk_lamp_, decoration_lights` | name parts of lights to treat as electric although the game doesn't |
-| | `NonElectricLights` | `lantern, mushrooms, Barrelstove, candle, oil_lamp` | name parts of lights never treated as electric; wins over the list above |
-| | `FridgesNeedPower` | `true` | fridges stop cooling without power |
 | | `StairwellOutlets` | `false` | devices in the stairwell get building power |
-| | `GlowingFurniture` | `Decoration Lights, decoration_lights` | furniture that glows without a light source and goes dark without power |
-| | `FixLampGlow` | `true` | a switched-off lamp stops glowing on every mesh (fixes the Wall Light's second bulb) |
-| | `ShitLightsFlicker` | `true` | lights flicker on Shit power |
-| | `FlickersPerMinute` / `FlickerDepth` / `FlickerBurstSeconds` / `FlickerSpeed` | `8` / `0.15` / `0.6` / `30` | how often, how deep, how long and how fast |
+| Fridges | `NeedPower` | `true` | fridges and freezers stop cooling without power |
+| Lights | `NeedPower` | `true` | electric lights go dark without power |
+| | `AddLights` | empty | extra lights to treat as electric: comma-separated exact names (furniture name, or the object name of a built-in lamp) |
+| | `RemoveLights` | empty | lights from the mod's list that keep working without power |
+| | `Flicker` | `true` | lights flicker on Shit power |
 | Generator | `PowersDevices` | `true` | a running Mini Generator powers its room |
 | | `PowerLevel` | `Shit` | its power tier |
-| Outages | `Enabled` / `PerDay` / `MinHoursBetween` | `true` / `1` / `6` | breaker trips on Shit electricity |
+| Outages | `Enabled` / `PerDay` | `true` / `1` | breaker trips on Shit electricity, about this many times per in-game day |
 | Water | `Enabled` | `true` | taps follow the water upgrades |
 | | `BestWater` | `Pure` | what the Best upgrade gives: Clean, Pure or Spring |
+| Testing | `PowerCutKey` | `None` | a key that cuts the building's power or brings it back (not saved) |
 | Mod | `Enabled` | `true` | off = everything goes back to vanilla and the patches are removed; works without a restart |
 
 When reporting a problem, please attach `BepInEx/LogOutput.log` and say where it happened (room, device or lamp)
